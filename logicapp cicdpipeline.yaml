@@ -1,0 +1,169 @@
+
+trigger:
+  branches:
+    include:
+    - dev
+  paths:
+    include:
+    - project-workflows/*
+    - pipelines/*
+
+parameters:
+- name: LA_ENV
+  displayName: Select environment to deploy to
+  type: string
+  default: Dev
+  values:
+  - Dev
+  - NonProd
+  - Prod
+
+pool:
+    name: ANR-project-ADO-Agentpool
+
+variables:
+  - ${{ if eq(parameters.LA_ENV, 'Dev') }}:
+      - group: dev
+  - ${{ if eq(parameters.LA_ENV, 'NonProd') }}:
+      - group: nonprod
+  - ${{ if eq(parameters.LA_ENV, 'Prod') }}:
+      - group: prod
+  - name: serviceconnection
+    ${{ if eq(parameters.LA_ENV, 'Dev') }}:
+      value: 'project-project-Nonprod'
+    ${{ if eq(parameters.LA_ENV, 'NonProd') }}:
+      value: 'project-project-Nonprod'
+    ${{ if eq(parameters.LA_ENV, 'Prod') }}:
+      value: 'NR-project-Prod'
+  - name: env
+    ${{ if eq(parameters.LA_ENV, 'Dev') }}:
+      value: 'dev'
+    ${{ if eq(parameters.LA_ENV, 'NonProd') }}:
+      value: 'nonprod'
+    ${{ if eq(parameters.LA_ENV, 'Prod') }}:
+      value: 'prod'
+  - name: logicAppPackageName
+    value: logic-app-pkg.zip
+  - name: ApplicationSettingsJsonPath
+    value: project-workflows/LogicApp/appsettings.json
+
+stages:
+- stage: Build_Package_${{ parameters.LA_ENV }}
+  displayName: Build & Publish in ${{ parameters.LA_ENV }}
+  jobs:
+    - job: 'Build_LogicApp'
+      condition: 
+        or(
+          and(eq('${{ parameters.LA_ENV }}', 'NonProd'), 
+              or(eq(variables['Build.SourceBranch'], 'refs/heads/qa'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/'))),
+          and(eq('${{ parameters.LA_ENV }}', 'Prod'), eq(variables['Build.SourceBranch'], 'refs/heads/main')),
+          eq('${{ parameters.LA_ENV }}', 'Dev')
+        )
+      displayName: 'Build & Publish in ${{ parameters.LA_ENV }}'
+      steps:
+      - checkout: self
+        persistCredentials: true
+        clean: true
+        env:
+          HTTP_PROXY: http://proxy.company.com:8080
+          HTTPS_PROXY: http://proxy.company.com:8080
+
+      - task: ArchiveFiles@2
+        displayName: 'Build Zip Package'
+        inputs:
+          rootFolderOrFile: $(Build.SourcesDirectory)/project-workflows/LogicApp 
+          includeRootFolder: false
+          archiveType: zip
+          archiveFile: $(System.DefaultWorkingDirectory)/$(logicAppPackageName)
+
+      - task: PublishPipelineArtifact@1
+        displayName: 'Publish Zipped Artifact'
+        inputs:
+          targetPath: $(System.DefaultWorkingDirectory)/$(logicAppPackageName)
+          artifact: LogicAppCodePackage
+
+- stage: Deploy
+  displayName: 'Deploy to ${{ parameters.LA_ENV }}'
+  jobs:      
+  - deployment: Deploy
+    condition: 
+      or(
+        and(eq('${{ parameters.LA_ENV }}', 'NonProd'), 
+            or(eq(variables['Build.SourceBranch'], 'refs/heads/qa'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/'))),
+        and(eq('${{ parameters.LA_ENV }}', 'Prod'), eq(variables['Build.SourceBranch'], 'refs/heads/main')),
+        eq('${{ parameters.LA_ENV }}', 'Dev')
+      )
+    displayName: 'Deploy to ${{ parameters.LA_ENV }}'
+    environment: ${{ variables.env }}
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - download: none
+          - checkout: self
+            persistCredentials: true
+            clean: true
+            env:
+              HTTP_PROXY: http://proxy.company.com:8080
+              HTTPS_PROXY: http://proxy.company.com:8080
+
+          - task: AzureKeyVault@2
+            displayName: 'Fetch Secrets from KV'
+            inputs:
+              azureSubscription: '${{ variables.serviceconnection }}'
+              KeyVaultName: '$(keyVaultName)'
+              SecretsFilter: |
+                LA-APPINSIGHTS-INSTRUMENTATIONKEY,
+                LA-AzureWebJobsStorage,
+                LA-office365-ConnectionRuntimeUrl,
+                LA-WEBSITE-CONTENTAZUREFILECONNECTIONSTRING,
+                LA-sql-anr-servername,
+                LA-sql-anr-databasename,
+                LA-AzureBlob-Copper-blobStorageEndpoint,
+                LA-AzureBlob-Coal-blobStorageEndpoint,
+                LA-AzureBlob-Common-blobStorageEndpoint,
+                LA-AzureBlob-Images-blobStorageEndpoint,
+                LA-AzureBlob-Failed-blobStorageEndpoint
+              RunAsPreJob: false
+
+
+          - task: DownloadPipelineArtifact@2
+            displayName: 'Download Artifact'
+            inputs:
+              buildType: 'current'
+              targetPath: $(System.DefaultWorkingDirectory)
+              artifact: LogicAppCodePackage
+
+          - task: replacetokens@6
+            enabled: true
+            displayName: Replace Tokens in appsettings.json
+            inputs:
+              sources: '$(System.DefaultWorkingDirectory)/$(ApplicationSettingsJsonPath)'
+              tokenPattern: 'custom'
+              tokenPrefix: '~~'
+              tokenSuffix: '~~'
+              ifNoFilesFound: 'warn'
+
+          - task: AzurePowerShell@5
+            displayName: 'Override App Settings'
+            inputs:
+              azureSubscription: ${{ variables.serviceconnection }}
+              scriptType: filePath
+              scriptPath: $(Build.SourcesDirectory)/pipelines/scripts/update-app-settings.ps1
+              scriptArguments:
+                -SubscriptionId $(SubscriptionId) 
+                -ResourceGroupName $(resourceGroupName) `
+                -LogicAppName $(logicAppName) `
+                -EnableWorkflowList $(enableWorkflowList) `
+                -DisableWorkflowList $(disableWorkflowList) `
+                -ApplicationSettingsJsonPath $(ApplicationSettingsJsonPath)
+              azurePowerShellVersion: latestVersion
+              pwsh: true
+
+          - task: AzureFunctionApp@2
+            displayName: 'Deploy Logic App'
+            inputs:
+              azureSubscription: ${{ variables.serviceconnection }}
+              appType: functionApp
+              appName: $(logicAppName)
+              package: $(System.DefaultWorkingDirectory)/$(logicAppPackageName)
