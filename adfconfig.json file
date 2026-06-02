@@ -1,0 +1,532 @@
+# using this deployment/ adfconfig.json override the golbal parameters
+{
+  "ls_azure_key_vault": [
+      {
+          "name": "$.properties.typeProperties.baseUrl",
+          "value": "https://$($Env:KEYVAULTNAME).vault.azure.net/",
+          "action": "update"
+      }
+  ],
+  "az21drstadfd01": [
+      {
+          "name": "$.properties.globalParameters.Mineshot_Server_Name.value",
+          "value": "$($Env:MINESHOTSERVERIP)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Mineshot_Port.value",
+          "value": "$($Env:MINESHOTSERVERPORT)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Mineshot_User_Name.value",
+          "value": "$($Env:MINESHOTUSERNAME)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Mineshot_secret_Name.value",
+          "value": "$($Env:MINESHOTSECRETNAME)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Mineshot_Default_Database.value",
+          "value": "$($Env:MINESHOTDEFAULTDATABASE)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Mineshot_Databases_list.value",
+          "value": "$($Env:MINESHOTDATABASELIST)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Storage_Account_Name.value",
+          "value": "$($Env:ADLSACCOUNTNAME)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Cluster_id.value",
+          "value": "$($Env:ADBCLUSTERID)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Workspace_id.value",
+          "value": "$($Env:ADBWORKSPACEID)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.uc_catalog.value",
+          "value": "$($Env:UC_CATALOG)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_root_path.value",
+          "value": "$($Env:COAL_ROOT_PATH)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Mineshot_sub_folder.value",
+          "value": "$($Env:MINESHOTSUBFOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Coal_Mineshot_Business_Unit.value",
+          "value": "$($Env:COAL_MINESHOT_BUSINESS_UNIT)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Max_work_load.value",
+          "value": "$($Env:MAX_WORK_LOAD)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_oracle_hcm_sub_folder.value",
+          "value": "$($Env:COAL_ORACLE_HCM_SUB_FOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Coal_oracle_hcm_BU.value",
+          "value": "$($Env:COAL_ORACLE_HCM_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_Gensuite_BU.value",
+          "value": "$($Env:COAL_GENSUITE_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_Gensuite_sub_folder.value",
+          "value": "$($Env:COAL_GENSUITE_SUB_FOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_metadata_schema.value",
+          "value": "$($Env:COAL_METADATA_SCHEMA)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_AQ_sub_folder.value",
+          "value": "$($Env:COAL_AQ_SUB_FOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Coal_AQ_BU.value",
+          "value": "$($Env:COAL_AQ_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_TC_sub_folder.value",
+          "value": "$($Env:COAL_TC_SUB_FOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Coal_TC_BU.value",
+          "value": "$($Env:COAL_TC_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_raketracking_sub_folder.value",
+          "value": "$($Env:COAL_RAKETRACKING_SUB_FOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_raketracking_BU.value",
+          "value": "$($Env:COAL_RAKETRACKING_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_lims_db_list.value",
+          "value": "$($Env:COPPER_LIMS_DB_LIST)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_lims_servername.value",
+          "value": "$($Env:COPPER_LIMS_SERVERNAME)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_lims_username.value",
+          "value": "$($Env:COPPER_LIMS_USERNAME)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_sapbpc_subpath.value",
+          "value": "$($Env:COAL_SAPBPC_SUBPATH)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.container_detail.value",
+          "value": "$($Env:CONTAINER_DETAIL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Coal_sapbpc_bu.value",
+          "value": "$($Env:COAL_SAPBPC_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_lims_sub_folder.value",
+          "value": "$($Env:COPPER_LIMS_SUB_FOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_lims_bu.value",
+          "value": "$($Env:COPPER_LIMS_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_root_path.value",
+          "value": "$($Env:COPPER_ROOT_PATH)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_metadata_schema.value",
+          "value": "$($Env:COPPER_METADATA_SCHEMA)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.rake_live_relative_url.value",
+          "value": "$($Env:RAKE_LIVE_RELATIVE_URL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.rake_challan_relative_url.value",
+          "value": "$($Env:RAKE_CHALLAN_RELATIVE_URL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.rake_Authorization.value",
+          "value": "$($Env:RAKE_AUTHORIZATION)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_e_learning_token.value",
+          "value": "$($Env:COAL_E_LEARNING_TOKEN)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_e_learning_subpath.value",
+          "value": "$($Env:COAL_E_LEARNING_SUBPATH)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Coal_e_learning_bu.value",
+          "value": "$($Env:COAL_E_LEARNING_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_e_learning_baseurl.value",
+          "value": "$($Env:COAL_E_LEARNING_BASEURL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.common_container_detail.value",
+          "value": "$($Env:COMMON_CONTAINER_DETAIL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.common_metadata_schema.value",
+          "value": "$($Env:COMMON_METADATA_SCHEMA)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.common_uc_catalog.value",
+          "value": "$($Env:COMMON_UC_CATALOG)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_container_detail.value",
+          "value": "$($Env:COPPER_CONTAINER_DETAIL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_uc_catalog.value",
+          "value": "$($Env:COPPER_UC_CATALOG)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.common_root_path.value",
+          "value": "$($Env:COMMON_ROOT_PATH)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_sap_ecc_sub_folder.value",
+          "value": "$($Env:COPPER_SAP_ECC_SUB_FOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_sapecc_BU.value",
+          "value": "$($Env:COPPER_SAPECC_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.WorkerNodeSize.value",
+          "value": "$($Env:WORKERNODESIZE)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.NoOfWorkerNode.value",
+          "value": "$($Env:NOOFWORKERNODE)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.ADBClusterVersion.value",
+          "value": "$($Env:ADBCLUSTERVERSION)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.common_container.value",
+          "value": "$($Env:COMMON_CONTAINER)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.kronos_dataset_id.value",
+          "value": "$($Env:KRONOS_DATASET_ID)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.coal_secret_name.value",
+          "value": "$($Env:COAL_SECRET_NAME)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.common_secret_name.value",
+          "value": "$($Env:COMMON_SECRET_NAME)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.copper_secret_name.value",
+          "value": "$($Env:COPPER_SECRET_NAME)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.coalmetadata_container_detail.value",
+          "value": "$($Env:COALMETADATA_CONTAINER_DETAIL)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.commonmetadata_container_detail.value",
+          "value": "$($Env:COMMONMETADATA_CONTAINER_DETAIL)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.coppermetadata_container_detail.value",
+          "value": "$($Env:COPPERMETADATA_CONTAINER_DETAIL)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.coal_adls_container.value",
+          "value": "$($Env:COAL_ADLS_CONTAINER)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.copper_adls_container.value",
+          "value": "$($Env:COPPER_ADLS_CONTAINER)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.common_kronos_sub_folder.value",
+          "value": "$($Env:COMMON_KRONOS_SUB_FOLDER)",
+          "action": "update"
+      }, 
+      {
+          "name": "$.properties.globalParameters.kronos_project_id.value",
+          "value": "$($Env:KRONOS_PROJECT_ID)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.rake_tat_relative_URL.value",
+          "value": "$($Env:RAKE_TAT_RELATIVE_URL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.rake_tat_Authorization.value",
+          "value": "$($Env:RAKE_TAT_AUTHORIZATION)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_rake_tracking_streaming_subfolder.value",
+          "value": "$($Env:COAL_RAKE_TRACKING_STREAMING_SUBFOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.common_storage_account_name.value",
+          "value": "$($Env:COMMON_STORAGE_ACCOUNT_NAME)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.copper_storage_account_name.value",
+          "value": "$($Env:COPPER_STORAGE_ACCOUNT_NAME)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.Mtcs_subfolder.value",
+          "value": "$($Env:MTCS_SUBFOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.opentext_path.value",
+          "value": "$($Env:OPENTEXT_PATH)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.opentext_relative_token_url.value",
+          "value": "$($Env:OPENTEXT_RELATIVE_TOKEN_URL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.opentext_base_url.value",
+          "value": "$($Env:OPENTEXT_BASE_URL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.opentext_creds.value",
+          "value": "$($Env:OPENTEXT_CREDS)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.opentext_daily_data_url.value",
+          "value": "$($Env:OPENTEXT_DAILY_DATA_URL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.opentext_history_data_url.value",
+          "value": "$($Env:OPENTEXT_HISTORY_DATA_URL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.minename_keyvaulturl.value",
+          "value": "$($Env:MINENAME_KEYVAULTURL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_pragathi_sub_folder.value",
+          "value": "$($Env:COAL_PRAGATHI_SUB_FOLDER)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.logistics_bu.value",
+          "value": "$($Env:LOGISTICS_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.coal_mtcs_bu.value",
+          "value": "$($Env:COAL_MTCS_BU)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.opentext_inprogress_data_url.value",
+          "value": "$($Env:OPENTEXT_INPROGRESS_DATA_URL)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.opentext_load_type.value",
+          "value": "$($Env:OPENTEXT_LOAD_TYPE)",
+          "action": "update"
+      },
+      {
+          "name": "$.properties.globalParameters.opentext_business_unit.value",
+          "value": "$($Env:OPENTEXT_BUSINESS_UNIT)",
+          "action": "update"
+      },
+     {
+          "name": "$.properties.globalParameters.Streaming_Cluster_Id.value",
+          "value": "$($Env:STREAMING_CLUSTER_ID)",
+          "action": "update"
+      },
+    {
+          "name": "$.properties.globalParameters.copper_oracle_hcm_bu.value",
+          "value": "$($Env:COPPER_ORACLE_HCM_BU)",
+          "action": "update"
+      },
+      {
+        "name": "$.properties.globalParameters.pbi_workspaceId.value",
+        "value": "$($Env:PBI_WORKSPACEID)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.pbi_datasetId.value",
+        "value": "$($Env:PBI_DATASETID)",
+        "action": "update"
+    },
+      {
+        "name": "$.properties.globalParameters.rake_abnormal_stoppage_relative_url.value",
+        "value": "$($Env:RAKE_ABNORMAL_STOPPAGE_RELATIVE_URL)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.rake_trip_data_relative_url.value",
+        "value": "$($Env:RAKE_TRIP_DATA_RELATIVE_URL)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.copper_s4hana_sub_folder.value",
+        "value": "$($Env:COPPER_S4HANA_SUB_FOLDER)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.copper_s4hana_bu.value",
+        "value": "$($Env:COPPER_S4HANA_BU)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.copper_s4hana_finance_bu.value",
+        "value": "$($Env:COPPER_S4HANA_FINANCE_BU)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.copper_s4hana_inventory_bu.value",
+        "value": "$($Env:COPPER_S4HANA_INVENTORY_BU)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.copper_s4hana_sm_bu.value",
+        "value": "$($Env:COPPER_S4HANA_SM_BU)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.adf_subscription_id.value",
+        "value": "$($Env:ADF_SUBSCRIPTION_ID)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.adf_resource_group.value",
+        "value": "$($Env:ADF_RESOURCE_GROUP)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.logic_app_url.value",
+        "value": "$($Env:LOGIC_APP_URL)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.email_automation_recipient_list.value",
+        "value": "$($Env:EMAIL_AUTOMATION_RECIPIENT_LIST)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.pbi_refresh_email_automation_recipient_list.value",
+        "value": "$($Env:PBI_REFRESH_EMAIL_AUTOMATION_RECIPIENT_LIST)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.ceo_ct_healthcheck_email_recipients.value",
+        "value": "$($Env:CEO_CT_HEALTHCHECK_EMAIL_RECIPIENTS)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.copper_logbook_servername.value",
+        "value": "$($Env:COPPER_LOGBOOK_SERVERNAME)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.copper_logbook_username.value",
+        "value": "$($Env:COPPER_LOGBOOK_USERNAME)",
+        "action": "update"
+    },
+    {
+        "name": "$.properties.globalParameters.copper_logbook_secretname.value",
+        "value": "$($Env:COPPER_LOGBOOK_SECRETNAME)",
+        "action": "update"
+    }
+  ]
+}
