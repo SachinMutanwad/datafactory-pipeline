@@ -1,0 +1,177 @@
+React + TypeScript + Vite
+Introduction
+project working on the UI/UX foundation standards for React-based application development.
+
+Installation
+Use the package manager Yarn to install dependency.
+
+#azure-pipeline-web-app-deploy_template.yaml
+parameters:
+- name: imageName               # Name of the Docker image
+  default: 'react-app'
+- name: imageTag
+  default: '$(Build.BuildNumber)'
+- name: registryName            # Name of Azure Container Registry
+  default: azacr
+- name: serviceConnection       # Azure service connection
+  default: 'project-project-Nonprod'
+- name: appServiceName
+  default: 'azappname'
+- name: appServiceResourceGroup
+  default: 'project-NonProd-project-project-Dev-RG'
+- name: ENV
+  default: dev
+
+stages:
+- stage: Deploy
+  displayName: 'Deploy to ${{ parameters.ENV }}'
+  condition: 
+    or(
+      and(eq('${{ parameters.ENV }}', 'NonProd'), 
+          or(eq(variables['Build.SourceBranch'], 'refs/heads/qa'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/'))),
+      and(eq('${{ parameters.ENV }}', 'Prod'), eq(variables['Build.SourceBranch'], 'refs/heads/main')),
+      eq('${{ parameters.ENV }}', 'Dev')
+    )
+
+  jobs:
+  - deployment: DeployContainerizedApp
+    displayName: 'Deploy containerized web app '
+    environment: '${{ parameters.ENV }}'
+    workspace:
+      clean: all
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+            env:
+              HTTP_PROXY: http://proxy.company.com:8080
+              HTTPS_PROXY: http://proxy.company.com:8080
+
+          - task: AzureCLI@2
+            enabled: true
+            displayName: 'ACR Docker Login using Admin Credentials'
+            inputs:
+              azureSubscription: ${{ parameters.serviceConnection }}
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                ACCESS_TOKEN=$(az acr login --name ${{ parameters.registryName }} --expose-token --output tsv --query accessToken)
+                echo "##vso[task.setvariable variable=USERNAME]00000000-0000-0000-0000-000000000000"
+                echo "##vso[task.setvariable variable=PASSWORD]$ACCESS_TOKEN"
+
+          - task: AzureCLI@2
+            enabled: true
+            displayName: 'Build and Push Docker Image'
+            inputs:
+              azureSubscription: ${{ parameters.serviceConnection }}
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                sudo mkdir -p /etc/systemd/system/docker.service.d
+                export NO_PROXY="localhost,127.0.0.1,${{ parameters.registryName }}.azurecr.io"
+                echo "[Service]
+                Environment=\"HTTP_PROXY=http://cloudproxy.adani.com:8080\"
+                Environment=\"HTTPS_PROXY=http://cloudproxy.adani.com:8080\"
+                Environment=\"NO_PROXY=$NO_PROXY\"" | sudo tee /etc/systemd/system/docker.service.d/http-proxy.conf
+                sudo systemctl daemon-reload
+                sudo -E systemctl restart docker
+                sudo docker login ${{ parameters.registryName }}.azurecr.io --username $USERNAME --password $PASSWORD
+                sudo cp -R /etc/pki/ca-trust/source/anchors/rootca.pem $(System.DefaultWorkingDirectory)/rootca.pem
+                sudo docker build --no-cache -t ${{ parameters.registryName }}.azurecr.io/${{ parameters.imageName }}:${{ parameters.imageTag }} .
+                sudo docker push ${{ parameters.registryName }}.azurecr.io/${{ parameters.imageName }}:${{ parameters.imageTag }}
+
+          - task: AzureCLI@2
+            enabled: true
+            displayName: 'Update Azure App Service with New Docker Image'
+            inputs:
+              azureSubscription: ${{ parameters.serviceConnection }}
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az webapp config set -g ${{ parameters.appServiceResourceGroup}} -n ${{ parameters.appServiceName }} \
+                  --generic-configurations '{"acrUseManagedIdentityCreds": true}'
+                az webapp config container set \
+                  --name ${{ parameters.appServiceName }} \
+                  --resource-group ${{ parameters.appServiceResourceGroup}} \
+                  --docker-custom-image-name ${{ parameters.registryName }}.azurecr.io/${{ parameters.imageName }}:${{ parameters.imageTag }}
+                  
+          - task: AzureCLI@2
+            displayName: 'Set Dynamic Build Variables'
+            inputs:
+              azureSubscription: ${{ parameters.serviceConnection }}
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                BUILD_NUMBER=$(Build.BuildId)
+                BUILD_DATE=$(date +'%d-%m-%Y')
+                echo "##vso[task.setvariable variable=BUILD_NUMBER]$BUILD_NUMBER"
+                echo "##vso[task.setvariable variable=BUILD_DATE]$BUILD_DATE"
+                
+          - task: replacetokens@6
+            enabled: true
+            displayName: Replace Token in app-setting.json
+            inputs:
+              sources: '$(System.DefaultWorkingDirectory)/app-setting.json'
+              tokenPattern: 'custom'
+              tokenPrefix: '__'
+              tokenSuffix: '__'
+              ifNoFilesFound: 'warn'
+
+          - task: AzureCLI@2
+            enabled: true
+            displayName: 'Update App settings'
+            inputs:
+              azureSubscription: ${{ parameters.serviceConnection }}
+              scriptType: 'bash'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                az webapp config appsettings set -g ${{ parameters.appServiceResourceGroup}} -n ${{ parameters.appServiceName }} \
+                  --settings "@$(System.DefaultWorkingDirectory)/app-setting.json"
+______________________________________________________________________________________________________________________________________________________________________
+
+
+
+
+trigger:
+  branches:
+    include:
+    - dev
+
+parameters:
+- name: ENV
+  displayName: Select environment to deploy to
+  type: string
+  default: Dev
+  values:
+  - Dev
+  - NonProd
+  - Prod
+variables:
+    - ${{ if eq(parameters.ENV, 'Dev') }}:
+        - group: dev
+    - ${{ if eq(parameters.ENV, 'NonProd') }}:
+        - group: nonprod
+    - ${{ if eq(parameters.ENV, 'Prod') }}:
+        - group: prod
+
+    - name: myserivceConn
+      ${{ if eq(parameters.ENV, 'Dev') }}:
+        value: 'Nonprod'
+      ${{ if eq(parameters.ENV, 'NonProd') }}:
+        value: 'Nonprod'
+      ${{ if eq(parameters.ENV, 'Prod') }}:
+        value: 'Prod'
+pool:
+  name: 'ADO-Agentpool'
+
+stages:
+- template: azure-pipeline-web-app-deploy_template.yaml
+  parameters:
+    ENV: '${{ parameters.ENV }}'
+    imageName: 'react-app'                              # Name of the image
+    imageTag: '$(Build.BuildId)'                        # Tag for the image
+    registryName: $(registryName)                       #   # Name of the ACR
+    serviceConnection: ${{ variables.myserivceConn }}   # Service connection for Azure
+    appServiceName: $(clientappServiceName)             # 
+    appServiceResourceGroup: $(resourceGroupName)       # '
