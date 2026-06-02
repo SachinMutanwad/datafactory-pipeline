@@ -1,0 +1,91 @@
+name: '1.0$(rev:.r)'
+
+trigger: none
+
+parameters:
+- name: ADFENV
+  displayName: Select ADF environment to deploy to
+  type: string
+  default: Dev
+  values:
+  - Dev
+  - NonProd
+  - Prod
+
+stages:
+- stage: ${{ parameters.ADFENV }}
+  pool:
+    name: ANR-Drishti-ADO-Agentpool
+  variables:
+    - ${{ if eq(parameters.ADFENV, 'Dev') }}:
+        - group: dev
+    - ${{ if eq(parameters.ADFENV, 'NonProd') }}:
+        - group: nonprod
+    - ${{ if eq(parameters.ADFENV, 'Prod') }}:
+        - group: prod
+    - name: myserivceConn
+      ${{ if eq(parameters.ADFENV, 'Dev') }}:
+        value: 'KCL-Drishti-Nonprod'
+      ${{ if eq(parameters.ADFENV, 'NonProd') }}:
+        value: 'KCL-Drishti-Nonprod'
+      ${{ if eq(parameters.ADFENV, 'Prod') }}:
+        value: 'NR-Drishti-Prod'
+    - name: env
+      ${{ if eq(parameters.ADFENV, 'Dev') }}:
+        value: 'data-dev'
+      ${{ if eq(parameters.ADFENV, 'Nonprod') }}:
+        value: 'data-nonprod'
+      ${{ if eq(parameters.ADFENV, 'Prod') }}:
+        value: 'data-prod'
+ 
+  jobs:     
+  - deployment: BuildAndPublishADF 
+    condition: 
+      or(
+        and(eq('${{ parameters.ADFENV }}', 'NonProd'), 
+            or(eq(variables['Build.SourceBranch'], 'refs/heads/qa'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/'))),
+        and(eq('${{ parameters.ADFENV }}', 'Prod'), eq(variables['Build.SourceBranch'], 'refs/heads/main')),
+        eq('${{ parameters.ADFENV }}', 'Dev')
+      )
+    displayName: Build And Publish ADF to ${{ parameters.ADFENV }}
+    environment: ${{ variables.env }}
+    timeoutInMinutes: 480
+    strategy:
+      runOnce:    
+        deploy:
+          steps:
+          - checkout: self
+            persistCredentials: true
+            clean: true
+            env:
+              HTTP_PROXY: http://cloudproxy.adani.com:8080
+              HTTPS_PROXY: http://cloudproxy.adani.com:8080
+
+          - task: PowerShell@2
+            enabled: true
+            displayName: Build ADF
+            inputs:
+              targetType: 'inline'
+              script: |
+                  pwsh -NonInteractive -Command "Install-Module -Name azure.datafactory.tools -Scope CurrentUser -Force"
+                  pwsh -Command "Get-Command -Module Azure.DataFactory.Tools"
+                  pwsh -NonInteractive -Command "Import-Module -Name azure.datafactory.tools -Force"
+                  pwsh -Command "Test-AdfCode -RootFolder ."
+            env:
+              HTTP_PROXY: http://cloudproxy.adani.com:8080
+              HTTPS_PROXY: http://cloudproxy.adani.com:8080
+          
+          - task: AzurePowerShell@5
+            displayName: Publish ADF
+            enabled: true
+            inputs:              
+              azureSubscription: '${{ variables.myserivceConn }}'
+              ScriptType: 'InlineScript'
+              azurePowerShellVersion: 'LatestVersion'
+              pwsh: true
+              Inline: |
+                  $opt = New-AdfPublishOption
+                  $opt.Excludes.Add("integrationruntime.*", "")
+                  #$opt.Excludes.Add("trigger.*", "")
+                  $opt.StopStartTriggers = $true
+                  Publish-AdfV2FromJson -RootFolder . -ResourceGroupName '$(resourceGroupName)' -DataFactoryName '$(DataFactoryName)' -Location 'CentralIndia' -Stage '$(System.DefaultWorkingDirectory)/deployment/adf-config.json' -Option $opt -Verbose
