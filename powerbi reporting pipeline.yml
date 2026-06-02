@@ -1,0 +1,146 @@
+# Added trigger
+trigger: none
+
+parameters:
+- name: ENV
+  displayName: Select environment to deploy PowerBI reports to
+  type: string
+  default: Dev
+  values:
+  - Dev
+  - NonProd
+  - Prod
+
+variables:
+  - ${{ if eq(parameters.ENV, 'Dev') }}:
+      - group: dev
+  - ${{ if eq(parameters.ENV, 'NonProd') }}:
+      - group: nonprod
+  - ${{ if eq(parameters.ENV, 'Prod') }}:
+      - group: prod
+  - name: myServiceConn
+    ${{ if eq(parameters.ENV, 'Dev') }}:
+      value: 'Nonprod'
+    ${{ if eq(parameters.ENV, 'NonProd') }}:
+      value: 'Nonprod'
+    ${{ if eq(parameters.ENV, 'Prod') }}:
+      value: 'Prod'
+
+pool:
+  name: 'ANR-Drishti-Windows-Agentpool'
+
+stages:
+- stage: Build
+  displayName: 'Build to ${{ parameters.ENV }}'
+  condition: 
+    or(
+      and(eq('${{ parameters.ENV }}', 'NonProd'), 
+          or(eq(variables['Build.SourceBranch'], 'refs/heads/qa'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/'))),
+      and(eq('${{ parameters.ENV }}', 'Prod'), eq(variables['Build.SourceBranch'], 'refs/heads/main')),
+
+      eq('${{ parameters.ENV }}', 'Dev')
+    )
+  jobs:
+  - job: Build  
+    displayName: 'Build'
+    workspace:
+      clean: all
+    steps:
+    - checkout: self
+      env:
+        HTTP_PROXY: http://proxy.company.com:8080
+        HTTPS_PROXY: http://proxy.company.com:8080
+
+    - task: AzureCLI@2
+      name: setOutput
+      displayName: Fetch SPN Secret
+      inputs:
+        azureSubscription: ${{ variables.myServiceConn }}
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+          # Fetch the secret from Azure Key Vault
+          $SECRET = az keyvault secret show `
+            --name '$(SPN_name)' `
+            --vault-name "$(keyVaultName)" `
+            --query value -o tsv
+          # Set the secret as a pipeline output variable
+          Write-Host "##vso[task.setvariable variable=secretvalue;isoutput=true]$SECRET"
+                  
+  - deployment: Deploy
+    displayName: 'Deploy Reports to Workspaces'
+    dependsOn: Build
+    environment: '${{ parameters.ENV }}'
+    timeoutInMinutes: 40
+    variables:
+      secretFromBuild: $[ dependencies.Build.outputs['setOutput.secretvalue'] ]
+    workspace:
+      clean: all
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - checkout: self
+            env:
+              HTTP_PROXY: http://proxy.comapny.com:8080
+              HTTPS_PROXY: http://proxy.company.com:8080
+
+          - task: replacetokens@6
+            displayName: Replace Tokens in All expressions.tmdl Files
+            inputs:
+              sources: '$(Build.SourcesDirectory)/**/expressions.tmdl'
+              tokenPattern: 'custom'
+              tokenPrefix: '__'
+              tokenSuffix: '__'
+              ifNoFilesFound: 'warn'
+
+          - task: PowerShell@2
+            displayName: Deploy Reports with Retry
+            inputs:
+              pwsh: true
+              targetType: 'inline'
+              script: |
+                Import-Module "C:\PowerShellModules\FabricPS-PBIP" -Verbose
+                Write-Host "Successfully imported module."
+
+                Set-FabricAuthToken -servicePrincipalId "$(appid)" -servicePrincipalSecret "$(secretFromBuild)" -tenantId "$(tenantid)" -reset
+
+                $pbipFiles = Get-ChildItem -Path "$(Build.SourcesDirectory)/" -Recurse -Filter "*.pbip"
+                if ($pbipFiles.Count -eq 0) {
+                    Write-Host "No .pbip files found."
+                    exit 0
+                }
+
+                $maxRetries = 5
+                $retryDelay = 60 # in seconds
+
+                foreach ($pbipFile in $pbipFiles) {
+                    $pbipDirectory = $pbipFile.DirectoryName
+                    Write-Host "Importing from directory: $pbipDirectory"
+                    $attempt = 0
+                    $success = $false
+
+                    while (-not $success -and $attempt -lt $maxRetries) {
+                        try {
+                            Import-FabricItems -workspaceId "$(copper_workspaceid)" -path $pbipDirectory
+                            Write-Host "Import succeeded for $pbipDirectory"
+                            $success = $true
+                        } catch {
+                            $errorMessage = $_.Exception.Message
+                            Write-Host "Attempt $($attempt + 1) failed: $errorMessage"
+
+                            if ($errorMessage -like "*model is refreshing*") {
+                                Write-Host "Model is refreshing. Waiting $retryDelay seconds before retry..."
+                                Start-Sleep -Seconds $retryDelay
+                                $attempt++
+                            } else {
+                                Write-Host "Non-retryable error encountered. Failing."
+                                throw $_
+                            }
+                        }
+                    }
+
+                    if (-not $success) {
+                        throw "Import failed for $pbipDirectory after $maxRetries attempts."
+                    }
+                }
