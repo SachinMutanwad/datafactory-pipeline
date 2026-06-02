@@ -1,0 +1,81 @@
+#SQL DB deployment pipeline
+name: SQL_DB_Deploy_$(Date:ddMMyyyy)$(Rev:.r)
+
+trigger:
+  branches:
+    include:
+      - dev
+
+parameters:
+  - name: ENV
+    displayName: Select Database environment to deploy to
+    type: string
+    default: Dev
+    values:
+      - Dev
+      - NonProd
+      - Prod
+
+pool:
+  name: Windows-Agentpool
+
+variables:
+  - ${{ if eq(parameters.ENV, 'Dev') }}:
+      - group: dev
+      - name: serviceconnection
+        value: 'L-Nonprod'
+      - name: env
+        value: 'data-dev'
+  - ${{ if eq(parameters.ENV, 'NonProd') }}:
+      - group: nonprod
+      - name: serviceconnection
+        value: '-Nonprod'
+      - name: env
+        value: 'data-nonprod'
+  - ${{ if eq(parameters.ENV, 'Prod') }}:
+      - group: prod
+      - name: serviceconnection
+        value: 'NR--Prod'
+      - name: env
+        value: 'data-prod'
+  - name: dacpac_path
+    value: $(System.DefaultWorkingDirectory)/N-C-D-SQLDb/deploy/N-C-D-SQLDb.dacpac
+
+stages:
+  - stage: Deploy_SQL_DB
+    jobs:
+      - deployment: BuildAndPublishADF
+        condition: |
+          or(
+            and(eq('${{ parameters.ENV }}', 'NonProd'), 
+                or(eq(variables['Build.SourceBranch'], 'refs/heads/qa'), startsWith(variables['Build.SourceBranch'], 'refs/heads/hotfix/'))),
+            and(eq('${{ parameters.ENV }}', 'Prod'), eq(variables['Build.SourceBranch'], 'refs/heads/main')),
+            eq('${{ parameters.ENV }}', 'Dev')
+          )
+        displayName: "Deploy SQL DB to ${{ parameters.ENV }}"
+        environment: ${{ variables.env }}
+        timeoutInMinutes: 480
+        strategy:
+          runOnce:
+            deploy:
+              steps:
+                - checkout: self
+                  env:
+                    HTTP_PROXY: http://proxy.company.com:8080
+                    HTTPS_PROXY: http://proxy.company.com:8080
+
+                - task: SqlAzureDacpacDeployment@1
+                  displayName: "Deploy DACPAC to Azure SQL"
+                  inputs:
+                    azureSubscription: '${{ variables.serviceconnection }}'
+                    AuthenticationType: 'servicePrincipal'
+                    ServerName: '$(SQL_Server).database.windows.net'
+                    DatabaseName: '$(SQL_DB)'
+                    deployType: 'DacpacTask'
+                    DeploymentAction: 'Publish'
+                    DacpacFile: '$(System.DefaultWorkingDirectory)/N-C-D-SQLDb/deploy/N-C-D-SQLDb.dacpac'
+
+
+
+
+
