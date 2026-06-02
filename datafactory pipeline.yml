@@ -15,7 +15,7 @@ parameters:
 stages:
 - stage: ${{ parameters.ADFENV }}
   pool:
-    name: ANR-Drishti-ADO-Agentpool
+    name: ADO-Agentpool
   variables:
     - ${{ if eq(parameters.ADFENV, 'Dev') }}:
         - group: dev
@@ -25,11 +25,11 @@ stages:
         - group: prod
     - name: myserivceConn
       ${{ if eq(parameters.ADFENV, 'Dev') }}:
-        value: 'KCL-Drishti-Nonprod'
+        value: 'Nonprod'
       ${{ if eq(parameters.ADFENV, 'NonProd') }}:
-        value: 'KCL-Drishti-Nonprod'
+        value: 'Nonprod'
       ${{ if eq(parameters.ADFENV, 'Prod') }}:
-        value: 'NR-Drishti-Prod'
+        value: 'Prod'
     - name: env
       ${{ if eq(parameters.ADFENV, 'Dev') }}:
         value: 'data-dev'
@@ -58,8 +58,8 @@ stages:
             persistCredentials: true
             clean: true
             env:
-              HTTP_PROXY: http://cloudproxy.adani.com:8080
-              HTTPS_PROXY: http://cloudproxy.adani.com:8080
+              HTTP_PROXY: http://proxy.company.com:8080
+              HTTPS_PROXY: http://proxy.company.com:8080
 
           - task: PowerShell@2
             enabled: true
@@ -72,8 +72,8 @@ stages:
                   pwsh -NonInteractive -Command "Import-Module -Name azure.datafactory.tools -Force"
                   pwsh -Command "Test-AdfCode -RootFolder ."
             env:
-              HTTP_PROXY: http://cloudproxy.adani.com:8080
-              HTTPS_PROXY: http://cloudproxy.adani.com:8080
+              HTTP_PROXY: http://proxy.company.com:8080
+              HTTPS_PROXY: http://proxy.company.com:8080
           
           - task: AzurePowerShell@5
             displayName: Publish ADF
